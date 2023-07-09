@@ -15,6 +15,17 @@
         "telegram-inline-calendar": "^1.6.2"
     },
     "scripts": {
-        "dev": "nodemon app.js"
+        "dev": "nodemon app.js",
+        "start": "node app.js",
+        "db:init": "yarn prisma init",
+        "db:migrate": "yarn prisma migrate dev",
+        "db:deploy": "yarn prisma migrate deploy",
+        "db:generate": "yarn prisma generate",
+        "db:studio": "yarn prisma studio",
+        "db:reset": "yarn prisma migrate reset",
+        "db:seed": "yarn prisma db seed"
+    },
+    "devDependencies": {
+        "dotenv": "^16.3.1"
     }
 }

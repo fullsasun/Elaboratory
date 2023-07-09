@@ -38,7 +38,7 @@ async function identifyUser(msg) {
     }
 }
 
-async function updateUserActivity(msg, activity) {
+async function setUserActivity(msg, activity) {
     await prisma.userActivity.update({
         where: {
             user_chat_id: String(msg.chat.id),
@@ -59,4 +59,4 @@ async function getUserActivity(msg) {
     return data?.activity;
 }
 
-module.exports = { identifyUser, updateUserActivity, getUserActivity };
+module.exports = { identifyUser, setUserActivity, getUserActivity };
