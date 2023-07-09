@@ -54,7 +54,7 @@ bot.on("callback_query", async (query) => {
     // INFO: JIKA USER INGIN MELENGKAPI PROFIL MEREKA
     if (userActivity == "fillprofil") {
         if (userIsExist == false) {
-            if (userStatus) setUserActivity(msg, "FILL_UP_PROFIL"); //Update aktifitas terakhir user, digunakan untuk menentukan respon berikutnya jika user mengirim pesan
+            setUserActivity(msg, "FILL_UP_PROFIL"); //Update aktifitas terakhir user, digunakan untuk menentukan respon berikutnya jika user mengirim pesan
             bot.editMessageText(
                 "Please provide your NIM/NIP (ex: 1907421001)\n*just type your NIM",
                 opts
@@ -67,7 +67,41 @@ bot.on("callback_query", async (query) => {
     }
 
     // INFO: JIKA USER MENAKAN MENU INVENTORY LIST
-    if (userActivity === "inventorylist") {
+    if (userActivity == "inventorylist") {
+        const datas = await prisma.goods.findMany({
+            orderBy: {
+                name: "asc",
+            },
+            take: 10,
+        });
+
+        var summary = "Here is a list of items that you can borrow \n";
+        const dataPlaceholder = [];
+        datas.forEach(async (data, i) => {
+            const allGoods = await prisma.tagId.count({
+                where: {
+                    goodsId: data.id,
+                },
+            });
+
+            // Check good available in db
+            const goodsInStock = await prisma.tagId.count({
+                where: {
+                    goodsId: data.id,
+                    status: "READY_IN_INVENTORY",
+                },
+            });
+
+            summary += `---------------------------------------------------------\n📦 Goods Name: ${data.name}\n📅 Total Stock: ${allGoods}\n⏳ Avaiable: ${goodsInStock}\n\n`;
+
+            if (i == datas.length - 1) {
+                bot.sendMessage(query.message.chat.id, summary);
+            }
+        });
+    }
+
+    // INFO: JIKA USER MENAKAN MENU ORDER ITEM
+    if (userActivity === "startorder") {
         // ONLY USER ALREADY REGISTER CAN ACCESS THIS MENU
         if (userIsExist == false) {
             bot.editMessageText(
@@ -76,10 +110,12 @@ bot.on("callback_query", async (query) => {
             );
             return;
         }
+
         const data = await prisma.goods.findMany({
             orderBy: {
                 name: "asc",
             },
+            take: 10,
         });
 
         const dataPlaceholder = [];
@@ -238,6 +274,11 @@ bot.on("callback_query", async (query) => {
                                 name: true,
                             },
                         },
+                        user: {
+                            select: {
+                                username: true,
+                            },
+                        },
                     },
                 });
 
@@ -247,17 +288,59 @@ bot.on("callback_query", async (query) => {
                     `ORDER#FINISH_FILL_ORDER_FORM#${updatedData.id}`
                 );
                 // Memberi balasan, berupa summary peminjaman
-                const summary = `The is a summary of your Rent\n🆔Your Order ID: ${
+                const summary = `\n\n🆔Order ID: ${
                     updatedData.id
-                }\n📦 Goods Name: ${
+                }\n\n📦Goods Name: ${
                     updatedData.good[0].name
-                }\n📅 Start Rent: ${days(
+                }\n\n📅Start Rent: ${days(
                     updatedData.startRent
-                )}\n⏳ Finish Rent: ${days(
+                )}\n\n⏳Finish Rent: ${days(
                     updatedData.finishRent
-                )}\n📔 Approval Status: ${updatedData.rentApprovalStatus}`;
+                )}\n\n📔Approval Status: ${updatedData.rentApprovalStatus}`;
 
-                bot.sendMessage(query.message.chat.id, summary);
+                // KIRIM PESAN KE USER
+                bot.sendMessage(
+                    query.message.chat.id,
+                    `The is a summary of your Rent${summary}`
+                );
+
+                // KIRIM PESAN KE ADMINISTRATOR
+                const admins = await prisma.user.findMany({
+                    where: {
+                        Role: {
+                            name: "ADMIN",
+                        },
+                    },
+                    select: {
+                        username: true,
+                        user_chat_id: true,
+                    },
+                });
+
+                admins.forEach((admin) => {
+                    const opts = {
+                        reply_markup: JSON.stringify({
+                            inline_keyboard: [
+                                [
+                                    {
+                                        text: `✅`,
+                                        callback_data: `confirm-order#${updatedData.id}`,
+                                    },
+                                    {
+                                        text: `❌`,
+                                        callback_data: `reject-order#${updatedData.id}`,
+                                    },
+                                ],
+                            ],
+                        }),
+                    };
+
+                    bot.sendMessage(
+                        admin.user_chat_id,
+                        `Hello ${admin.username}, ${updatedData.user[0].username} submits a loan of goods with the details below.${summary}`,
+                        opts
+                    );
+                });
             }
         }
     }
@@ -304,6 +387,242 @@ bot.on("callback_query", async (query) => {
             )}\n📔 Approval Status: ${order.rentApprovalStatus}\n`;
         });
         bot.sendMessage(query.message.chat.id, summary);
+    }
+
+    // INFO: ADMIN SECTION
+    // JIKA ADMIN INGIN MELIHAT SEMUA DAFTAR PEMINJAM YANG BELUM DISETUJUI
+    if (userActivity == "admin-confirmationlist") {
+        const dataPlaceholder = [];
+        const data = await prisma.rent.findMany({
+            where: { rentApprovalStatus: "WAITING" },
+            select: {
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                user: {
+                    select: {
+                        username: true,
+                    },
+                },
+                id: true,
+            },
+        });
+        data.forEach((item) => {
+            dataPlaceholder.push([
+                {
+                    text: `${item.good[0].name} by ${item.user[0].username}`,
+                    callback_data: `detail-order#${item.id}`,
+                },
+            ]);
+            dataPlaceholder.push([
+                {
+                    text: `✅`,
+                    callback_data: `confirm-order#${item.id}`,
+                },
+                {
+                    text: `❌`,
+                    callback_data: `reject-order#${item.id}`,
+                },
+            ]);
+        });
+
+        opts["reply_markup"] = JSON.stringify({
+            inline_keyboard: dataPlaceholder,
+        });
+
+        bot.editMessageText(
+            "The following shows a list of items and users who want to borrow these items.\n\nYou can confirm quickly by pressing the tick or cross under the item name.\n\nIf you want to see details of the loan, press the name of the item.",
+            opts
+        );
+    }
+
+    // JIKA ADMIN MENYETUJUI PEMINJAMAN
+    if (userActivity.startsWith("confirm-order")) {
+        const [_, id] = userActivity.split("#");
+
+        // CEK APAKAH ID TELAH DIKONFIRMASI
+        const approvalStatus = await prisma.rent.findUnique({
+            where: {
+                id,
+            },
+            select: {
+                rentApprovalStatus: true,
+            },
+        });
+
+        if (approvalStatus.rentApprovalStatus !== "WAITING") {
+            bot.editMessageText(
+                `User order with id ${id} already confirm`,
+                opts
+            );
+
+            return;
+        }
+
+        // AMBIL RANDOM DATA TAG, UBAH STATUS TAG MENJADI BOOKED BY USER
+        const goodsTagId = await prisma.tagId.findFirst({
+            where: {
+                status: "READY_IN_INVENTORY",
+            },
+            orderBy: {
+                id: "asc",
+            },
+            select: {
+                tagId: true,
+            },
+        });
+
+        // UBAH STATUS PEMINJAMAN MENJADI ALLOWED
+        const allowRent = await prisma.rent.update({
+            where: {
+                id,
+            },
+            data: {
+                rentApprovalStatus: "ALLOWED",
+                itemTag: {
+                    connect: {
+                        tagId: goodsTagId.tagId,
+                    },
+                },
+            },
+            select: {
+                id: true,
+                startRent: true,
+                finishRent: true,
+                rentApprovalStatus: true,
+                user: {
+                    select: {
+                        user_chat_id: true,
+                        username: true,
+                    },
+                },
+                good: {
+                    select: {
+                        name: true,
+                        id: true,
+                    },
+                },
+            },
+        });
+
+        // UBAH STATUS TAG
+        await prisma.tagId.update({
+            where: { tagId: goodsTagId.tagId },
+            data: {
+                status: "BOOKED_BY_USER",
+            },
+            select: {
+                tagId: true,
+            },
+        });
+
+        // KIRIM PESAN TERHADAP USER
+        bot.sendMessage(
+            allowRent.user[0].user_chat_id,
+            `Your order with the details below has been approved:\n\n📦 Goods Name: ${
+                allowRent.good[0].name
+            }\n\n📅 Start Rent: ${days(
+                allowRent.startRent
+            )}\n\n⏳ Finish Rent: ${days(
+                allowRent.finishRent
+            )}\n\n📔 Approval Status: ${
+                allowRent.rentApprovalStatus
+            }\n\n🆔 TAG ID: ${
+                goodsTagId.tagId
+            } \n\n ⚠️ PLEASE NOTE, YOU MUST TAKE THE SAME ITEM AS THE TAG ID SHOWS. ⚠️\n\nNow you can pick up the item on the set date. Don't forget to keep items and don't lend them back. And make sure you return the item on the date stated.`
+        );
+
+        // KIRIM FEEDBACK KE ADMIN
+        bot.editMessageText(
+            `You have just approved the order made by ${
+                allowRent.user[0].user_chat_id
+            }. Item borrowed is a ${
+                allowRent.good[0].name
+            }. The loan period starts from ${days(
+                allowRent.startRent
+            )} until ${days(allowRent.finishRent)}.`,
+            opts
+        );
+
+        // LAKUKAN PENGECEKAN APAKAH ADA USER YANG MEMINJAM BARANG TETAPI STOK BARANG SUDAH HABIS, JIKA ADA KIRIMKAN PESAN
+    }
+
+    // JIKA ADMIN MENOLAK PEMINJAMAN
+    if (userActivity.startsWith("reject-order")) {
+        const [_, id] = userActivity.split("#");
+
+        // CEK APAKAH ID TELAH DIKONFIRMASI
+        const approvalStatus = await prisma.rent.findUnique({
+            where: {
+                id,
+            },
+            select: {
+                rentApprovalStatus: true,
+            },
+        });
+
+        if (approvalStatus.rentApprovalStatus !== "WAITING") {
+            bot.editMessageText(
+                `User order with id ${id} already confirm`,
+                opts
+            );
+
+            return;
+        }
+
+        // UBAH STATUS PEMINJAMAN MENJADI REJECTED
+        const allowRent = await prisma.rent.update({
+            where: {
+                id,
+            },
+            data: {
+                rentApprovalStatus: "REJECTED",
+            },
+            select: {
+                id: true,
+                startRent: true,
+                finishRent: true,
+                rentApprovalStatus: true,
+                user: {
+                    select: {
+                        user_chat_id: true,
+                        username: true,
+                    },
+                },
+                good: {
+                    select: {
+                        name: true,
+                        id: true,
+                    },
+                },
+            },
+        });
+
+        // KIRIM PESAN TERHADAP USER
+        bot.sendMessage(
+            allowRent.user[0].user_chat_id,
+            `Your order with the details below has been approved:\n\n📦 Goods Name: ${
+                allowRent.good[0].name
+            }\n\n📅 Start Rent: ${days(
+                allowRent.startRent
+            )}\n\n⏳ Finish Rent: ${days(
+                allowRent.finishRent
+            )}\n\n Sorry your order rejected by administrator 😔. If you want to keep applying for a rent, please make another application`
+        );
+
+        // KIRIM FEEDBACK KE ADMIN
+        bot.editMessageText(
+            `You have just reject the order made by ${
+                allowRent.user[0].user_chat_id
+            }. Item borrowed is a ${
+                allowRent.good[0].name
+            }. The loan period starts from ${days(
+                allowRent.startRent
+            )} until ${days(allowRent.finishRent)}.`,
+            opts
+        );
     }
 });
 

@@ -11,9 +11,11 @@ datasource db {
 }
 
 model UserActivity {
-  id           String  @id @default(cuid())
-  user_chat_id String  @unique
+  id           String   @id @default(cuid())
+  user_chat_id String   @unique
   activity     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Role {
@@ -25,43 +27,53 @@ model Role {
 }
 
 model User {
-  id           String  @id @default(uuid())
-  username     String  @unique
-  user_chat_id String  @unique
-  nim          String  @unique
+  id           String   @id @default(uuid())
+  username     String   @unique
+  user_chat_id String   @unique
+  nim          String   @unique
   first_name   String?
   last_name    String?
   Rent         Rent[]
   rentId       String?
-  Role         Role?   @relation(fields: [roleId], references: [id])
+  Role         Role?    @relation(fields: [roleId], references: [id])
   roleId       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Goods {
-  id     String  @id @default(cuid())
-  name   String
-  tag    TagId[]
-  Rent   Rent[]
-  rentId String?
+  id        String   @id @default(cuid())
+  name      String
+  tag       TagId[]
+  Rent      Rent[]
+  rentId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model TagId {
-  id      String        @id @default(cuid())
-  tagId   String        @unique
-  status  GOODS_STATUS? @default(READY_IN_INVENTORY)
-  Goods   Goods?        @relation(fields: [goodsId], references: [id])
-  goodsId String?
+  id        String        @id @default(cuid())
+  tagId     String        @unique
+  status    GOODS_STATUS? @default(READY_IN_INVENTORY)
+  Goods     Goods?        @relation(fields: [goodsId], references: [id])
+  goodsId   String?
+  Rent      Rent[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model Rent {
   id                 String           @id @default(cuid())
   good               Goods[]
   user               User[]
-  quantity           Int?
+  itemTag            TagId?           @relation(fields: [tagIdId], references: [id])
   startRent          DateTime?
   finishRent         DateTime?
   rentApprovalStatus APPROVAL_STATUS? @default(WAITING)
   loanStatus         LOAN_STATUS?     @default(NOT_STARTED)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  tagIdId            String?
 }
 
 enum APPROVAL_STATUS {

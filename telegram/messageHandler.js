@@ -42,6 +42,18 @@ bot.on("message", async (data) => {
 
         if (nim) {
             try {
+                // CEK APAKAH NIM SUDAH DIGUNAKAN
+                const nimIsExist = await prisma.user.findUnique({
+                    where: { nim },
+                });
+                if (nimIsExist) {
+                    bot.sendMessage(
+                        data.chat.id,
+                        "Sorry this NIM/NIP already register",
+                        opts
+                    );
+                    return;
+                }
                 await prisma.user.create({
                     data: {
                         username:

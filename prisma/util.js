@@ -83,9 +83,32 @@ async function isUserExist(msg) {
     }
 }
 
+async function getUserRole(msg) {
+    try {
+        // GET USER CHAT FROM USER ACTIVITY DB
+        const user = await prisma.user.findUnique({
+            where: {
+                user_chat_id: String(msg.chat.id),
+            },
+            select: {
+                Role: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
+
+        return user.Role.name;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 module.exports = {
     identifyUser,
     setUserActivity,
     getUserActivity,
     isUserExist,
+    getUserRole,
 };
