@@ -1,4 +1,5 @@
 const prisma = require("../../prisma/client");
+const bot = require("../../telegram/telegramClient");
 const { resError, resSuccess } = require("../../util/responseHandler");
 
 exports.startRent = async (req, res) => {
@@ -14,6 +15,15 @@ exports.startRent = async (req, res) => {
                 rentApprovalStatus: "ALLOWED",
                 loanStatus: "NOT_STARTED",
             },
+            select: {
+                id: true,
+                user: {
+                    select: {
+                        user_chat_id: true,
+                        username: true,
+                    },
+                },
+            },
         });
 
         if (rentData.length == 0) {
@@ -23,7 +33,7 @@ exports.startRent = async (req, res) => {
         const updateRentData = await prisma.rent.update({
             where: { id: rentData[0].id },
             data: {
-                loanStatus: "USED",
+                loanStatus: "START_CONFIRMATION",
             },
         });
 
@@ -37,6 +47,27 @@ exports.startRent = async (req, res) => {
         });
 
         // KIRIM PESAN KONFIRMASI PADA USER
+        const opts = {
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: `✅`,
+                            callback_data: `confirm-start#${rentData[0].id}`,
+                        },
+                        {
+                            text: `❌`,
+                            callback_data: `reject-start#${rentData[0].id}`,
+                        },
+                    ],
+                ],
+            }),
+        };
+        bot.sendMessage(
+            rentData[0].user[0].user_chat_id,
+            "We need your confirmation ⚠️\n\n We need to make sure that you have taken the items you ordered?\n\nPress the check icon to confirm, if you feel it's not you press the cross button!",
+            opts
+        );
 
         return resSuccess({
             res,
@@ -61,6 +92,15 @@ exports.finishRent = async (req, res) => {
                 rentApprovalStatus: "ALLOWED",
                 loanStatus: "USED",
             },
+            select: {
+                id: true,
+                user: {
+                    select: {
+                        user_chat_id: true,
+                        username: true,
+                    },
+                },
+            },
         });
 
         if (rentData.length == 0) {
@@ -84,6 +124,27 @@ exports.finishRent = async (req, res) => {
         });
 
         // KIRIM PESAN KONFIRMASI PADA USER
+        const opts = {
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: `✅`,
+                            callback_data: `confirm-finish#${rentData[0].id}`,
+                        },
+                        {
+                            text: `❌`,
+                            callback_data: `reject-finish#${rentData[0].id}`,
+                        },
+                    ],
+                ],
+            }),
+        };
+        bot.sendMessage(
+            rentData[0].user[0].user_chat_id,
+            "We need your confirmation ⚠️\n\nWe need confirmation that you really return the item you borrowed!\n\nPress the check icon to confirm, if you feel it's not you press the cross button!",
+            opts
+        );
 
         return resSuccess({
             res,

@@ -370,6 +370,11 @@ bot.on("callback_query", async (query) => {
                 finishRent: true,
                 rentApprovalStatus: true,
                 loanStatus: true,
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
                 good: {
                     select: {
                         name: true,
@@ -380,13 +385,257 @@ bot.on("callback_query", async (query) => {
         let summary = "The is list of your Rent\n";
         listOrder.forEach((order) => {
             summary += `---------------------------------------------------------
-            \n🆔Your Order ID: ${order.id}\n📦 Goods Name: ${
+            \n🆔 Your Order ID: ${order.id}\n📦 Goods Name: ${
                 order.good[0].name
             }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
                 order.finishRent
-            )}\n📔 Approval Status: ${order.rentApprovalStatus}\n`;
+            )}\n📇 Tag ID: ${order?.itemTag?.tagId}\n📔 Approval Status: ${
+                order.rentApprovalStatus
+            }\n🔃 Rent Status: ${order.loanStatus}`;
         });
         bot.sendMessage(query.message.chat.id, summary);
+    }
+
+    // INFO: JIKA USER MALKUKAN KONFIRMASI MULAI PEMINJAMAN BARANG\
+    if (userActivity.startsWith("confirm-start")) {
+        const [_, id] = userActivity.split("#");
+
+        const allowRent = await prisma.rent.update({
+            where: {
+                id,
+            },
+            data: {
+                loanStatus: "USED",
+            },
+            select: {
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                startRent: true,
+                finishRent: true,
+                rentApprovalStatus: true,
+                loanStatus: true,
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
+            },
+        });
+
+        bot.editMessageText(
+            `We confirm that you 🫡 \n\n📦 Goods Name: ${
+                allowRent.good[0].name
+            }\n\n📅 Start Rent: ${days(
+                allowRent.startRent
+            )}\n\n⏳ Finish Rent: ${days(allowRent.finishRent)}\n\n📇 Tag ID: ${
+                allowRent?.itemTag?.tagId
+            }\n\n📔 Approval Status: ${
+                allowRent.rentApprovalStatus
+            }\n\n🆔 TAG ID: ${
+                allowRent.itemTag.tagId
+            }\n\nDon't forget to keep items and don't lend them back. And make sure you return the item on the date stated.`,
+            opts
+        );
+    }
+
+    // INFO: JIKA USER TIDAK MENGKONFIRMASI PEMINJAMAN
+    if (userActivity.startsWith("reject-start")) {
+        const [_, id] = userActivity.split("#");
+        const rentData = await prisma.rent.update({
+            where: {
+                id,
+            },
+            data: {
+                loanStatus: "NOT_STARTED",
+            },
+            select: {
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                startRent: true,
+                finishRent: true,
+                rentApprovalStatus: true,
+                loanStatus: true,
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
+                user: {
+                    select: {
+                        username: true,
+                        nim: true,
+                    },
+                },
+            },
+        });
+
+        bot.editMessageText(
+            `We don't confirm that it's you!\n\nThe system will inform the lab keeper that your item was taken by an unauthorized person.\nWe hope that you will take further action by contacting the lab keeper.`,
+            opts
+        );
+
+        // KIRIM PESAN KE ADMINISTRATOR
+        const admins = await prisma.user.findMany({
+            where: {
+                Role: {
+                    name: "ADMIN",
+                },
+            },
+            select: {
+                username: true,
+                user_chat_id: true,
+            },
+        });
+
+        admins.forEach((admin) => {
+            bot.sendMessage(
+                admin.user_chat_id,
+                `Attention, please pay attention to the rent data below\n\n📦 Goods Name: ${
+                    rentData.good[0].name
+                }\n\n🔡 Borrower NIM: ${
+                    rentData.user[0].nim
+                }\n\n🧑Borrower Username: ${
+                    rentData.user[0].username
+                }\n\n📅 Start Rent: ${days(
+                    rentData.startRent
+                )}\n\n⏳ Finish Rent: ${days(
+                    rentData.finishRent
+                )}\n\n📇 Tag ID: ${
+                    rentData?.itemTag?.tagId
+                }\n\n📔 Approval Status: ${
+                    rentData.rentApprovalStatus
+                }\n\n🆔 TAG ID: ${
+                    rentData.itemTag.tagId
+                }\n\nThe user feels that not taken the item. An unauthorized person takes the item out of the lab.`
+            );
+        });
+    }
+
+    // INFO: JIKA USER MALKUKAN KONFIRMASI MENGEMBALIKAN BARANG PINJAMAN
+    if (userActivity.startsWith("confirm-finish")) {
+        const [_, id] = userActivity.split("#");
+
+        const allowRent = await prisma.rent.update({
+            where: {
+                id,
+            },
+            data: {
+                loanStatus: "FINISH",
+            },
+            select: {
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                startRent: true,
+                finishRent: true,
+                rentApprovalStatus: true,
+                loanStatus: true,
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
+            },
+        });
+
+        bot.editMessageText(
+            `We confirm that you 🫡 \n\n📦 Goods Name: ${
+                allowRent.good[0].name
+            }\n\n📅 Start Rent: ${days(
+                allowRent.startRent
+            )}\n\n⏳ Finish Rent: ${days(allowRent.finishRent)}\n\n📇 Tag ID: ${
+                allowRent?.itemTag?.tagId
+            }\n\n📔 Approval Status: ${
+                allowRent.rentApprovalStatus
+            }\n\n🆔 TAG ID: ${
+                allowRent.itemTag.tagId
+            }\n\nThank you for returning the item completely and on time🤗`,
+            opts
+        );
+    }
+
+    // INFO: JIKA USER TIDAK MENGKONFIRMASI PENGEMBALIAN BARANG
+    if (userActivity.startsWith("reject-finish")) {
+        const [_, id] = userActivity.split("#");
+        const rentData = await prisma.rent.update({
+            where: {
+                id,
+            },
+            data: {
+                loanStatus: "USED",
+            },
+            select: {
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                startRent: true,
+                finishRent: true,
+                rentApprovalStatus: true,
+                loanStatus: true,
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
+                user: {
+                    select: {
+                        username: true,
+                        nim: true,
+                    },
+                },
+            },
+        });
+
+        bot.editMessageText(
+            `We don't confirm that it's you!\n\nThe system will inform the lab keeper. that your item was returned by an unauthorized person\nWe hope that you will take further action by contacting the lab keeper.`,
+            opts
+        );
+
+        // KIRIM PESAN KE ADMINISTRATOR
+        const admins = await prisma.user.findMany({
+            where: {
+                Role: {
+                    name: "ADMIN",
+                },
+            },
+            select: {
+                username: true,
+                user_chat_id: true,
+            },
+        });
+
+        admins.forEach((admin) => {
+            bot.sendMessage(
+                admin.user_chat_id,
+                `Attention, please pay attention to the rent data below\n\n📦 Goods Name: ${
+                    rentData.good[0].name
+                }\n\n🔡 Borrower NIM: ${
+                    rentData.user[0].nim
+                }\n\n🧑Borrower Username: ${
+                    rentData.user[0].username
+                }\n\n📅 Start Rent: ${days(
+                    rentData.startRent
+                )}\n\n⏳ Finish Rent: ${days(
+                    rentData.finishRent
+                )}\n\n📇 Tag ID: ${
+                    rentData?.itemTag?.tagId
+                }\n\n📔 Approval Status: ${
+                    rentData.rentApprovalStatus
+                }\n\n🆔 TAG ID: ${
+                    rentData.itemTag.tagId
+                }\n\nThe user feels that not taken the item. The user feels that he has not returned the item. But the item data goes into inventory. Please check and reconfirm the item.`
+            );
+        });
     }
 
     // INFO: ADMIN SECTION
