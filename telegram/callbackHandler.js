@@ -84,6 +84,12 @@ bot.on("callback_query", async (query) => {
                 id,
             },
         });
+        const allGoods = await prisma.tagId.count({
+            where: {
+                goodsId: id,
+            },
+        });
+
         // Check good available in db
         const goodsInStock = await prisma.tagId.count({
             where: {
@@ -124,15 +130,13 @@ bot.on("callback_query", async (query) => {
         now.setDate(1);
         now.setHours(0);
         now.setMinutes(0);
-        now.setSeconds(0);
-        const text = `This The Goods Detail 📦\nName: ${data.name}\nQuantity:${data.quantity}`;
         const opts = {
             chat_id: query.message.chat.id,
             message_id: query.message.message_id,
         };
         opts["reply_markup"] = calendar.createNavigationKeyboard(now);
         bot.editMessageText(
-            `You Are Select ${data.name}📦\nPlease select the start date of the rent 🗓️`,
+            `This The Goods Detail 📦\nName: ${data.name}\n Quantity:${allGoods}\n Available:${goodsInStock}\nPlease select the start date of the rent 🗓️`,
             opts
         );
     }
