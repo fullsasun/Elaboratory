@@ -467,7 +467,7 @@ bot.on("callback_query", async (query) => {
                 status: "READY_IN_INVENTORY",
             },
             orderBy: {
-                id: "asc",
+                createdAt: "asc",
             },
             select: {
                 tagId: true,
