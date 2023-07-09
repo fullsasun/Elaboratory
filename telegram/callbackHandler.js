@@ -1,5 +1,9 @@
 const prisma = require("../prisma/client");
-const { setUserActivity, getUserActivity } = require("../prisma/util");
+const {
+    setUserActivity,
+    getUserActivity,
+    isUserExist,
+} = require("../prisma/util");
 const { Keyboard } = require("../util/defaultInlineKeyboardLayout");
 const bot = require("./telegramClient");
 const Calendar = require("telegram-inline-calendar");
@@ -20,6 +24,7 @@ bot.on("callback_query", async (query) => {
     const userMessageId = query.message.message_id;
     const msg = query.message;
     const userActivity = query.data;
+    const userIsExist = await isUserExist(query.message);
 
     const opts = {
         chat_id: userChatId,
@@ -48,15 +53,29 @@ bot.on("callback_query", async (query) => {
 
     // INFO: JIKA USER INGIN MELENGKAPI PROFIL MEREKA
     if (userActivity == "fillprofil") {
-        setUserActivity(msg, "FILL_UP_PROFIL"); //Update aktifitas terakhir user, digunakan untuk menentukan respon berikutnya jika user mengirim pesan
-        bot.editMessageText(
-            "Please provide your NIM/NIP (ex: 1907421001)\n*just type your NIM",
-            opts
-        );
+        if (userIsExist == false) {
+            if (userStatus) setUserActivity(msg, "FILL_UP_PROFIL"); //Update aktifitas terakhir user, digunakan untuk menentukan respon berikutnya jika user mengirim pesan
+            bot.editMessageText(
+                "Please provide your NIM/NIP (ex: 1907421001)\n*just type your NIM",
+                opts
+            );
+        }
+
+        if (userIsExist == true) {
+            bot.editMessageText("Dont wory we already save your data 🔥", opts);
+        }
     }
 
     // INFO: JIKA USER MENAKAN MENU INVENTORY LIST
     if (userActivity === "inventorylist") {
+        // ONLY USER ALREADY REGISTER CAN ACCESS THIS MENU
+        if (userIsExist == false) {
+            bot.editMessageText(
+                "Sory we cant show this menu for unregister user 😔. Please fillup your profil first 🙂",
+                opts
+            );
+            return;
+        }
         const data = await prisma.goods.findMany({
             orderBy: {
                 name: "asc",
@@ -78,6 +97,15 @@ bot.on("callback_query", async (query) => {
 
     // INFO: JIKA USER MEMESAN BARANG
     if (userActivity.startsWith("order")) {
+        // ONLY USER ALREADY REGISTER CAN ACCESS THIS MENU
+        if (userIsExist == false) {
+            bot.editMessageText(
+                "Sory we cant show this menu for unregister user 😔. Please fillup your profil first 🙂",
+                opts
+            );
+            return;
+        }
+
         const [_, id] = userActivity.split("#");
         const data = await prisma.goods.findUnique({
             where: {
@@ -236,6 +264,15 @@ bot.on("callback_query", async (query) => {
 
     // INFO: JIKA USER MELIHAT ORDER
     if (userActivity === "myorder") {
+        // ONLY USER ALREADY REGISTER CAN ACCESS THIS MENU
+        if (userIsExist == false) {
+            bot.editMessageText(
+                "Sory we cant show this menu for unregister user 😔. Please fillup your profil first 🙂",
+                opts
+            );
+            return;
+        }
+
         const listOrder = await prisma.rent.findMany({
             where: {
                 user: {

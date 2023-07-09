@@ -59,4 +59,33 @@ async function getUserActivity(msg) {
     return data?.activity;
 }
 
-module.exports = { identifyUser, setUserActivity, getUserActivity };
+async function isUserExist(msg) {
+    try {
+        // GET USER CHAT FROM USER ACTIVITY DB
+        const user = await prisma.user.findUnique({
+            where: {
+                user_chat_id: String(msg.chat.id),
+            },
+        });
+
+        console.log(user);
+        // JIKA SUDAH TERDAPAT USER, MAKA RETURN TRUE
+        if (user) {
+            return true;
+        }
+
+        // JIKA TIDAK TERDAPAT USER, MAKA RETURN FALSE
+        if (!user) {
+            return false;
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+module.exports = {
+    identifyUser,
+    setUserActivity,
+    getUserActivity,
+    isUserExist,
+};

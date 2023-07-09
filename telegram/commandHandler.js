@@ -56,41 +56,28 @@ bot.onText(/\/start/, async (data) => {
 
     if (!userStatus) {
         options = {
-            reply_markup: {
-                resize_keyboard: true,
-                one_time_keyboard: true,
-                keyboard: [[{ text: "/command" }]],
-            },
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [
+                        { text: "Detail Profil", callback_data: "profil" },
+                        { text: "Fill Up Profil", callback_data: "fillprofil" },
+                    ],
+                    [
+                        {
+                            text: "Inventory List",
+                            callback_data: "inventorylist",
+                        },
+                        { text: "Order Good", callback_data: "peminjaman" },
+                    ],
+                    [{ text: "My Rent Order", callback_data: "myorder" }],
+                ],
+            }),
         };
-        text = `Welcome to our Inventory Telegram bot! We're thrilled to have you on board. 
-        Our bot is designed to help you manage your inventory and keep track of your stock levels. 
-        With our easy-to-use interface and powerful features, you'll be able to manage your inventory with ease and efficiency.
-        Here are some commands you can use
-        \/command - For See All The Capability`;
+        text = `Welcome to our Inventory Telegram bot! We're thrilled to have you on board. Our bot is designed to help you manage your inventory and keep track of your stock levels. 
+        With our easy-to-use interface and powerful features, you'll be able to manage your inventory with ease and efficiency.`;
     }
 
     bot.sendMessage(userChatId, text, options);
-});
-
-bot.onText(/\/command/, (msg) => {
-    var options = {
-        reply_markup: JSON.stringify({
-            inline_keyboard: [
-                [
-                    { text: "Detail Profil", callback_data: "profil" },
-                    { text: "Fill Up Profil", callback_data: "fillprofil" },
-                ],
-                [
-                    { text: "Inventory List", callback_data: "inventorylist" },
-                    { text: "Order Good", callback_data: "peminjaman" },
-                ],
-                [{ text: "My Rent Order", callback_data: "myorder" }],
-            ],
-        }),
-    };
-    const text =
-        "Hallo Selamat Datang Di Sistem Inventori PNJ, Berikut menu-menu yang bisa anda pilih";
-    bot.sendMessage(msg.chat.id, text, options);
 });
 
 module.exports = bot;
