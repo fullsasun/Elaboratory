@@ -51,6 +51,11 @@ bot.on("message", async (data) => {
                         first_name: data.from?.first_name,
                         user_chat_id: String(data.chat.id),
                         nim: nim,
+                        Role: {
+                            connect: {
+                                name: "USER",
+                            },
+                        },
                     },
                 });
                 setUserActivity(data, "FINISH_FILL_UP_PROFIL");

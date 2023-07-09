@@ -50,7 +50,7 @@ bot.on("callback_query", async (query) => {
     if (userActivity == "fillprofil") {
         setUserActivity(msg, "FILL_UP_PROFIL"); //Update aktifitas terakhir user, digunakan untuk menentukan respon berikutnya jika user mengirim pesan
         bot.editMessageText(
-            "Please provide your NIM (ex: 1907421001)\n*just type your NIM",
+            "Please provide your NIM/NIP (ex: 1907421001)\n*just type your NIM",
             opts
         );
     }
@@ -84,6 +84,24 @@ bot.on("callback_query", async (query) => {
                 id,
             },
         });
+        // Check good available in db
+        const goodsInStock = await prisma.tagId.count({
+            where: {
+                goodsId: id,
+                status: "READY_IN_INVENTORY",
+            },
+        });
+        if (goodsInStock == 0) {
+            bot.editMessageText(
+                `📦 You Are Select ${data.name} not availble for now. All itens are on rent. Please try again in few day.`,
+                {
+                    chat_id: userChatId,
+                    message_id: userMessageId,
+                }
+            );
+            return;
+        }
+
         const rent = await prisma.rent.create({
             data: {
                 user: {
