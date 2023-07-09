@@ -547,6 +547,69 @@ bot.on("callback_query", async (query) => {
         );
 
         // LAKUKAN PENGECEKAN APAKAH ADA USER YANG MEMINJAM BARANG TETAPI STOK BARANG SUDAH HABIS, JIKA ADA KIRIMKAN PESAN
+
+        // Hitung sluruh tag di db
+        const availableTagId = await prisma.tagId.count({
+            where: {
+                Goods: {
+                    id: allowRent.good[0].id,
+                },
+                status: "READY_IN_INVENTORY",
+            },
+        });
+
+        if (availableTagId == 0) {
+            // Cari semua user yang meminjam barang
+            const autoRejectedUser = await prisma.rent.findMany({
+                where: {
+                    good: {
+                        every: {
+                            id: allowRent.good[0].id,
+                        },
+                    },
+                    rentApprovalStatus: "WAITING",
+                },
+                select: {
+                    id: true,
+                    startRent: true,
+                    finishRent: true,
+                    good: {
+                        select: {
+                            name: true,
+                        },
+                    },
+                    user: {
+                        select: {
+                            username: true,
+                            user_chat_id: true,
+                        },
+                    },
+                },
+            });
+
+            autoRejectedUser.forEach(async (user) => {
+                await prisma.rent.update({
+                    where: {
+                        id: user.id,
+                    },
+                    data: {
+                        rentApprovalStatus: "REJECTED",
+                    },
+                });
+                bot.sendMessage(
+                    user.user[0].user_chat_id,
+                    `Sorry your order with detail bellow:\n\n🆔Order ID: ${
+                        user.id
+                    }\n\n📦 Goods Name: ${
+                        user.good[0].name
+                    }\n\n📅 Start Rent: ${days(
+                        user.startRent
+                    )}\n\n⏳ Finish Rent: ${days(
+                        user.finishRent
+                    )}\n\n📔 Approval Status: Auto Rjected by System\n\nSorry, there are no more items you can borrow. The administrator just approved another request, and unfortunately it was the last item in inventory. You will have to wait a few days for the item to be returned and you can make a new request.`
+                );
+            });
+        }
     }
 
     // JIKA ADMIN MENOLAK PEMINJAMAN
