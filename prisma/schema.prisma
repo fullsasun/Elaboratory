@@ -27,28 +27,32 @@ model Role {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  user_chat_id String   @unique
-  nim          String   @unique
+  id           String    @id @default(uuid())
+  username     String    @unique
+  user_chat_id String    @unique
+  nim          String    @unique
   first_name   String?
   last_name    String?
   Rent         Rent[]
   rentId       String?
-  Role         Role?    @relation(fields: [roleId], references: [id])
+  Role         Role?     @relation(fields: [roleId], references: [id])
   roleId       String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lateRent     lateRent? @relation(fields: [lateRentId], references: [id])
+  lateRentId   String?
 }
 
 model Goods {
-  id        String   @id @default(cuid())
-  name      String
-  tag       TagId[]
-  Rent      Rent[]
-  rentId    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(cuid())
+  name       String
+  tag        TagId[]
+  Rent       Rent[]
+  rentId     String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  lateRent   lateRent? @relation(fields: [lateRentId], references: [id])
+  lateRentId String?
 }
 
 model TagId {
@@ -60,9 +64,24 @@ model TagId {
   Rent      Rent[]
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  lateRent  lateRent[]
 }
 
 model Rent {
+  id                 String           @id @default(cuid())
+  good               Goods[]
+  user               User[]
+  itemTag            TagId?           @relation(fields: [tagIdId], references: [id])
+  startRent          DateTime?
+  finishRent         DateTime?
+  rentApprovalStatus APPROVAL_STATUS? @default(WAITING)
+  loanStatus         LOAN_STATUS?     @default(NOT_STARTED)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  tagIdId            String?
+}
+
+model lateRent {
   id                 String           @id @default(cuid())
   good               Goods[]
   user               User[]
