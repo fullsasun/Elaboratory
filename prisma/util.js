@@ -99,7 +99,7 @@ async function getUserRole(msg) {
             },
         });
 
-        return user.Role.name;
+        return user?.Role?.name;
     } catch (error) {
         console.log(error);
     }
