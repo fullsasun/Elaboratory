@@ -83,30 +83,35 @@ bot.on("callback_query", async (query) => {
             take: 10,
         });
 
-        var summary = "Here is a list of items that you can borrow \n";
+        let summary = "Here is a list of items that you can borrow \n";
         const dataPlaceholder = [];
 
-        datas.forEach(async (data, i) => {
-            const allGoods = await prisma.tagId.count({
-                where: {
-                    goodsId: data.id,
-                },
-            });
+        for (const key in datas) {
+            if (Object.hasOwnProperty.call(datas, key)) {
+                const data = datas[key];
 
-            // Check good available in db
-            const goodsInStock = await prisma.tagId.count({
-                where: {
-                    goodsId: data.id,
-                    status: "READY_IN_INVENTORY",
-                },
-            });
+                const allGoods = await prisma.tagId.count({
+                    where: {
+                        goodsId: data.id,
+                    },
+                });
 
-            summary += `---------------------------------------------------------\n📦 Goods Name: ${data.name}\n📅 Total Stock: ${allGoods}\n⏳ Avaiable: ${goodsInStock}\n\n`;
-
-            if (i + 1 == datas.length) {
-                bot.sendMessage(query.message.chat.id, summary);
+                // Check good available in db
+                const goodsInStock = await prisma.tagId.count({
+                    where: {
+                        goodsId: data.id,
+                        status: "READY_IN_INVENTORY",
+                    },
+                });
+                summary += `---------------------------------------------------------\n📦 Goods Name: ${data.name}\n📅 Total Stock: ${allGoods}\n⏳ Avaiable: ${goodsInStock}\n\n`;
             }
-        });
+        }
+
+        if (datas.length === 0) {
+            summary = "We currently do not have a list of items in the system.";
+        }
+
+        bot.sendMessage(query.message.chat.id, summary);
     }
 
     // INFO: JIKA USER MENAKAN MENU ORDER ITEM
