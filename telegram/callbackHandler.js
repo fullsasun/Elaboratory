@@ -1022,7 +1022,7 @@ bot.on("callback_query", async (query) => {
         allRent.forEach((order) => {
             summary += `\n\n---------------------------------------------------------
             \n🆔 Order ID: ${order.id}\n📦 Goods Name: ${
-                order.good[0].name
+                order.good[0]?.name
             }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
                 order.finishRent
             )}\n📇 Tag ID: ${order?.itemTag?.tagId}\n📔 Approval Status: ${
