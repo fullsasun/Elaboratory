@@ -381,7 +381,7 @@ bot.on("callback_query", async (query) => {
                     },
                 },
             },
-            take: 15,
+            take: 20,
             orderBy: {
                 createdAt: "desc",
             },
