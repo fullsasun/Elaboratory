@@ -381,10 +381,14 @@ bot.on("callback_query", async (query) => {
                     },
                 },
             },
+            take: 15,
+            orderBy: {
+                createdAt: "desc",
+            },
         });
         let summary = "The is list of your Rent\n";
         listOrder.forEach((order) => {
-            summary += `---------------------------------------------------------
+            summary += `\n\n---------------------------------------------------------
             \n🆔 Your Order ID: ${order.id}\n📦 Goods Name: ${
                 order.good[0].name
             }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
