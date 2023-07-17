@@ -97,3 +97,66 @@ exports.listGoods = async (req, res) => {
         });
     }
 };
+
+exports.updateGoods = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        const data = await prisma.goods.update({
+            where: { id },
+            data: {
+                name,
+            },
+        });
+        return resSuccess({ res, title: "Success update item", data });
+    } catch (error) {
+        resError({
+            res,
+            errors: error,
+            title: "Failed to update item",
+            code: 400,
+        });
+    }
+};
+
+exports.detailGoods = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const data = await prisma.goods.findFirstOrThrow({
+            where: { id },
+        });
+        return resSuccess({ res, title: "Success get item detail", data });
+    } catch (error) {
+        let errorTitle = "";
+        if (error.code === "P2025" && error.name === "NotFoundError") {
+            errorTitle = "Cant find the item";
+        }
+        resError({
+            res,
+            errors: error,
+            title: errorTitle,
+            code: 400,
+        });
+    }
+};
+
+exports.deleteGoods = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const data = await prisma.goods.delete({
+            where: { id },
+        });
+        return resSuccess({ res, title: "Success delete item", data });
+    } catch (error) {
+        let errorTitle = "";
+        if (error.meta.cause === "Record to delete does not exist.") {
+            errorTitle = "Record to delete does not exist.";
+        }
+        resError({
+            res,
+            errors: error,
+            title: errorTitle,
+            code: 400,
+        });
+    }
+};
