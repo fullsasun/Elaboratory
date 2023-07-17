@@ -57,7 +57,7 @@ const checkTime = async () => {
         );
         const msgTitle = `Dear ${rent.user[0].username},\n\nThis is a notification to inform you that you are ${daysDifference} day(s) late in returning the rented item. Please return it as soon as possible to avoid any additional fees or penalties. The data below is the details of rent items that you have not returned yet:`;
         const rentDetail = `🆔 Your Order ID: ${rent.id}\n📦 Goods Name: ${
-            rent.good[0].name
+            rent.good[0]?.name
         }\n📅 Start Rent: ${days(rent.startRent)}\n⏳ Finish Rent: ${days(
             rent.finishRent
         )}\n📇 Tag ID: ${rent?.itemTag?.tagId}\n📔 Approval Status: ${

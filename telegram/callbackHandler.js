@@ -305,7 +305,7 @@ bot.on("callback_query", async (query) => {
                 const summary = `\n\n🆔Order ID: ${
                     updatedData.id
                 }\n\n📦Goods Name: ${
-                    updatedData.good[0].name
+                    updatedData.good[0]?.name
                 }\n\n📅Start Rent: ${days(
                     updatedData.startRent
                 )}\n\n⏳Finish Rent: ${days(
@@ -404,7 +404,7 @@ bot.on("callback_query", async (query) => {
         listOrder.forEach((order) => {
             summary += `\n\n---------------------------------------------------------
             \n🆔 Your Order ID: ${order.id}\n📦 Goods Name: ${
-                order.good[0].name
+                order.good[0]?.name
             }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
                 order.finishRent
             )}\n📇 Tag ID: ${order?.itemTag?.tagId}\n📔 Approval Status: ${
@@ -449,7 +449,7 @@ bot.on("callback_query", async (query) => {
 
         bot.editMessageText(
             `We confirm that you 🫡 \n\n📦 Goods Name: ${
-                allowRent.good[0].name
+                allowRent.good[0]?.name
             }\n\n📅 Start Rent: ${days(
                 allowRent.startRent
             )}\n\n⏳ Finish Rent: ${days(allowRent.finishRent)}\n\n📇 Tag ID: ${
@@ -519,7 +519,7 @@ bot.on("callback_query", async (query) => {
             bot.sendMessage(
                 admin.user_chat_id,
                 `Attention, please pay attention to the rent data below\n\n📦 Goods Name: ${
-                    rentData.good[0].name
+                    rentData.good[0]?.name
                 }\n\n🔡 Borrower NIM: ${
                     rentData.user[0].nim
                 }\n\n🧑Borrower Username: ${
@@ -588,7 +588,7 @@ bot.on("callback_query", async (query) => {
 
         bot.editMessageText(
             `We confirm that you 🫡 \n\n📦 Goods Name: ${
-                allowRent.good[0].name
+                allowRent.good[0]?.name
             }\n\n📅 Start Rent: ${days(
                 allowRent.startRent
             )}\n\n⏳ Finish Rent: ${days(allowRent.finishRent)}\n\n📇 Tag ID: ${
@@ -658,7 +658,7 @@ bot.on("callback_query", async (query) => {
             bot.sendMessage(
                 admin.user_chat_id,
                 `Attention, please pay attention to the rent data below\n\n📦 Goods Name: ${
-                    rentData.good[0].name
+                    rentData.good[0]?.name
                 }\n\n🔡 Borrower NIM: ${
                     rentData.user[0].nim
                 }\n\n🧑Borrower Username: ${
@@ -701,7 +701,7 @@ bot.on("callback_query", async (query) => {
         data.forEach((item) => {
             dataPlaceholder.push([
                 {
-                    text: `${item.good[0].name} by ${item.user[0].username}`,
+                    text: `${item.good[0]?.name} by ${item.user[0].username}`,
                     callback_data: `detail-order#${item.id}`,
                 },
             ]);
@@ -761,7 +761,7 @@ bot.on("callback_query", async (query) => {
             where: {
                 status: "READY_IN_INVENTORY",
                 Goods: {
-                    id: approvalStatus.good[0].id,
+                    id: approvalStatus.good[0]?.id,
                 },
             },
             orderBy: {
@@ -820,7 +820,7 @@ bot.on("callback_query", async (query) => {
         bot.sendMessage(
             allowRent.user[0].user_chat_id,
             `Your order with the details below has been approved:\n\n📦 Goods Name: ${
-                allowRent.good[0].name
+                allowRent.good[0]?.name
             }\n\n📅 Start Rent: ${days(
                 allowRent.startRent
             )}\n\n⏳ Finish Rent: ${days(
@@ -837,7 +837,7 @@ bot.on("callback_query", async (query) => {
             `You have just approved the order made by ${
                 allowRent.user[0].user_chat_id
             }. Item borrowed is a ${
-                allowRent.good[0].name
+                allowRent.good[0]?.name
             }. The loan period starts from ${days(
                 allowRent.startRent
             )} until ${days(allowRent.finishRent)}.`,
@@ -850,7 +850,7 @@ bot.on("callback_query", async (query) => {
         const availableTagId = await prisma.tagId.count({
             where: {
                 Goods: {
-                    id: allowRent.good[0].id,
+                    id: allowRent.good[0]?.id,
                 },
                 status: "READY_IN_INVENTORY",
             },
@@ -862,7 +862,7 @@ bot.on("callback_query", async (query) => {
                 where: {
                     good: {
                         every: {
-                            id: allowRent.good[0].id,
+                            id: allowRent.good[0]?.id,
                         },
                     },
                     rentApprovalStatus: "WAITING",
@@ -899,7 +899,7 @@ bot.on("callback_query", async (query) => {
                     `Sorry your order with detail bellow:\n\n🆔Order ID: ${
                         user.id
                     }\n\n📦 Goods Name: ${
-                        user.good[0].name
+                        user.good[0]?.name
                     }\n\n📅 Start Rent: ${days(
                         user.startRent
                     )}\n\n⏳ Finish Rent: ${days(
@@ -965,7 +965,7 @@ bot.on("callback_query", async (query) => {
         bot.sendMessage(
             allowRent.user[0].user_chat_id,
             `Your order with the details below has been rejected:\n\n📦 Goods Name: ${
-                allowRent.good[0].name
+                allowRent.good[0]?.name
             }\n\n📅 Start Rent: ${days(
                 allowRent.startRent
             )}\n\n⏳ Finish Rent: ${days(
@@ -978,7 +978,7 @@ bot.on("callback_query", async (query) => {
             `You have just reject the order made by ${
                 allowRent.user[0].user_chat_id
             }. Item borrowed is a ${
-                allowRent.good[0].name
+                allowRent.good[0]?.name
             }. The loan period starts from ${days(
                 allowRent.startRent
             )} until ${days(allowRent.finishRent)}.`,
