@@ -411,7 +411,7 @@ bot.on("callback_query", async (query) => {
                 order.rentApprovalStatus
             }\n🔃 Rent Status: ${order.loanStatus}`;
         });
-        if (datas.length === 0) {
+        if (listOrder.length === 0) {
             summary =
                 "You currently do not have a list of order in the system.";
         }
