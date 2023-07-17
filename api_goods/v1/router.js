@@ -1,13 +1,7 @@
-const {
-    createGoods,
-    listGoods,
-    updateGoods,
-    detailGoods,
-    deleteGoods,
-} = require("./controllers");
+const { create, list, update, detail, deleteItem } = require("./controllers");
 const router = require("express").Router();
 
-router.route("/").post(createGoods).get(listGoods);
-router.route("/:id").patch(updateGoods).get(detailGoods).delete(deleteGoods);
+router.route("/").post(create).get(list);
+router.route("/:id").patch(update).get(detail).delete(deleteItem);
 
 module.exports = router;

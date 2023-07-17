@@ -3,7 +3,7 @@ const bot = require("../../telegram/telegramClient");
 const { resError, resSuccess } = require("../../util/responseHandler");
 const ITEM_LIMIT = 2;
 
-exports.createGoods = async (req, res) => {
+exports.create = async (req, res) => {
     try {
         const { name } = req.body;
         const data = await prisma.goods.create({
@@ -22,7 +22,7 @@ exports.createGoods = async (req, res) => {
     }
 };
 
-exports.listGoods = async (req, res) => {
+exports.list = async (req, res) => {
     try {
         const { search, cursor } = req.query;
         let itemList;
@@ -98,7 +98,7 @@ exports.listGoods = async (req, res) => {
     }
 };
 
-exports.updateGoods = async (req, res) => {
+exports.update = async (req, res) => {
     try {
         const { id } = req.params;
         const { name } = req.body;
@@ -119,7 +119,7 @@ exports.updateGoods = async (req, res) => {
     }
 };
 
-exports.detailGoods = async (req, res) => {
+exports.detail = async (req, res) => {
     try {
         const { id } = req.params;
         const data = await prisma.goods.findFirstOrThrow({
@@ -140,7 +140,7 @@ exports.detailGoods = async (req, res) => {
     }
 };
 
-exports.deleteGoods = async (req, res) => {
+exports.deleteItem = async (req, res) => {
     try {
         const { id } = req.params;
         const data = await prisma.goods.delete({
