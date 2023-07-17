@@ -16,8 +16,8 @@
         "telegram-inline-calendar": "^1.6.2"
     },
     "scripts": {
-        "dev": "nodemon app.js",
-        "dev-server": "nodemon http.js",
+        "dev-telegram": "nodemon app.js",
+        "dev-server": "nodemon inventory.js",
         "start": "node app.js",
         "db:init": "yarn prisma init",
         "db:migrate": "yarn prisma migrate dev",

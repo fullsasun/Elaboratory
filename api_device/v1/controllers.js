@@ -86,11 +86,22 @@ exports.finishRent = async (req, res) => {
         // Check request exist
         const rentData = await prisma.rent.findMany({
             where: {
-                itemTag: {
-                    tagId: tagUid,
-                },
-                rentApprovalStatus: "ALLOWED",
-                loanStatus: "USED",
+                OR: [
+                    {
+                        itemTag: {
+                            tagId: tagUid,
+                        },
+                        rentApprovalStatus: "ALLOWED",
+                        loanStatus: "USED",
+                    },
+                    {
+                        itemTag: {
+                            tagId: tagUid,
+                        },
+                        rentApprovalStatus: "ALLOWED",
+                        loanStatus: "LATE",
+                    },
+                ],
             },
             select: {
                 id: true,
@@ -106,22 +117,6 @@ exports.finishRent = async (req, res) => {
         if (rentData.length == 0) {
             throw "Cant find rent data";
         }
-
-        const updateRentData = await prisma.rent.update({
-            where: { id: rentData[0].id },
-            data: {
-                loanStatus: "FINISH",
-            },
-        });
-
-        const updateTagData = await prisma.tagId.update({
-            where: {
-                tagId: tagUid,
-            },
-            data: {
-                status: "READY_IN_INVENTORY",
-            },
-        });
 
         // KIRIM PESAN KONFIRMASI PADA USER
         const opts = {
@@ -149,9 +144,10 @@ exports.finishRent = async (req, res) => {
         return resSuccess({
             res,
             title: "Success finish rent",
-            data: { updateRentData, updateTagData },
+            data: {},
         });
     } catch (error) {
+        console.log(error);
         return resError({ res, title: "Failed to finish rent", errors: error });
     }
 };

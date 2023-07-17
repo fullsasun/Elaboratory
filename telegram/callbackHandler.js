@@ -525,12 +525,21 @@ bot.on("callback_query", async (query) => {
     if (userActivity.startsWith("confirm-finish")) {
         const [_, id] = userActivity.split("#");
 
+        const rentDetail = await prisma.rent.findUnique({
+            where: {
+                id,
+            },
+        });
+
+        let rentStatus =
+            rentDetail.loanStatus === "FINISH" ? "FINISH" : "LATE_FINISH";
+
         const allowRent = await prisma.rent.update({
             where: {
                 id,
             },
             data: {
-                loanStatus: "FINISH",
+                loanStatus: rentStatus,
             },
             select: {
                 good: {
@@ -547,6 +556,15 @@ bot.on("callback_query", async (query) => {
                         tagId: true,
                     },
                 },
+            },
+        });
+
+        const updateTagData = await prisma.tagId.update({
+            where: {
+                tagId: allowRent.itemTag.tagId,
+            },
+            data: {
+                status: "READY_IN_INVENTORY",
             },
         });
 
