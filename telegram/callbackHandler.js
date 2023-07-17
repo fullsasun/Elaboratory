@@ -68,6 +68,14 @@ bot.on("callback_query", async (query) => {
 
     // INFO: JIKA USER MENAKAN MENU INVENTORY LIST
     if (userActivity == "inventorylist") {
+        // ONLY USER ALREADY REGISTER CAN ACCESS THIS MENU
+        if (userIsExist == false) {
+            bot.editMessageText(
+                "Sory we cant show this menu for unregister user 😔. Please fillup your profil first 🙂",
+                opts
+            );
+            return;
+        }
         const datas = await prisma.goods.findMany({
             orderBy: {
                 name: "asc",
@@ -77,6 +85,7 @@ bot.on("callback_query", async (query) => {
 
         var summary = "Here is a list of items that you can borrow \n";
         const dataPlaceholder = [];
+
         datas.forEach(async (data, i) => {
             const allGoods = await prisma.tagId.count({
                 where: {
@@ -94,7 +103,7 @@ bot.on("callback_query", async (query) => {
 
             summary += `---------------------------------------------------------\n📦 Goods Name: ${data.name}\n📅 Total Stock: ${allGoods}\n⏳ Avaiable: ${goodsInStock}\n\n`;
 
-            if (i == datas.length - 1) {
+            if (i + 1 == datas.length) {
                 bot.sendMessage(query.message.chat.id, summary);
             }
         });
@@ -720,6 +729,12 @@ bot.on("callback_query", async (query) => {
             },
             select: {
                 rentApprovalStatus: true,
+                good: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
             },
         });
 
@@ -736,6 +751,9 @@ bot.on("callback_query", async (query) => {
         const goodsTagId = await prisma.tagId.findFirst({
             where: {
                 status: "READY_IN_INVENTORY",
+                Goods: {
+                    id: approvalStatus.good[0].id,
+                },
             },
             orderBy: {
                 createdAt: "asc",
@@ -937,7 +955,7 @@ bot.on("callback_query", async (query) => {
         // KIRIM PESAN TERHADAP USER
         bot.sendMessage(
             allowRent.user[0].user_chat_id,
-            `Your order with the details below has been approved:\n\n📦 Goods Name: ${
+            `Your order with the details below has been rejected:\n\n📦 Goods Name: ${
                 allowRent.good[0].name
             }\n\n📅 Start Rent: ${days(
                 allowRent.startRent
