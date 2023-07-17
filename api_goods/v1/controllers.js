@@ -124,6 +124,15 @@ exports.detail = async (req, res) => {
         const { id } = req.params;
         const data = await prisma.goods.findFirstOrThrow({
             where: { id },
+            select: {
+                tag: {
+                    select: {
+                        id: true,
+                        tagId: true,
+                        status: true,
+                    },
+                },
+            },
         });
         return resSuccess({ res, title: "Success get item detail", data });
     } catch (error) {
@@ -151,6 +160,36 @@ exports.deleteItem = async (req, res) => {
         let errorTitle = "";
         if (error.meta.cause === "Record to delete does not exist.") {
             errorTitle = "Record to delete does not exist.";
+        }
+        resError({
+            res,
+            errors: error,
+            title: errorTitle,
+            code: 400,
+        });
+    }
+};
+
+exports.addTagToItem = async (req, res) => {
+    try {
+        const { tagId, goodsId } = req.body;
+        console.log(tagId);
+        const data = await prisma.goods.update({
+            where: {
+                id: goodsId,
+            },
+            data: {
+                tag: {
+                    connect: tagId.map((tag) => ({ tagId: tag })),
+                },
+            },
+        });
+        return resSuccess({ res, title: "Success link tag id to item", data });
+    } catch (error) {
+        console.log(error);
+        let errorTitle = "Failed to link tag to item";
+        if (error?.meta?.cause === "Record to delete does not exist.") {
+            errorTitle = "Record to link does not exist.";
         }
         resError({
             res,
