@@ -5,7 +5,9 @@ const callbackHandler = require("./telegram/callbackHandler");
 const ROUTER = require("./router");
 const app = express();
 const http = require("http").Server(app);
+const cron = require("./cron/cronWrapper");
 
+cron;
 commandHandler;
 messageHandler;
 callbackHandler;
