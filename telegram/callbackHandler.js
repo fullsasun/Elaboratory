@@ -958,6 +958,52 @@ bot.on("callback_query", async (query) => {
             opts
         );
     }
+
+    // JIKA ADMIN INGIN MELIHAT SELURUH PEMINJAMAN
+    if (userActivity == "admin-rentlist") {
+        const allRent = await prisma.rent.findMany({
+            select: {
+                id: true,
+                startRent: true,
+                finishRent: true,
+                loanStatus: true,
+                rentApprovalStatus: true,
+                user: {
+                    select: {
+                        username: true,
+                        user_chat_id: true,
+                    },
+                },
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
+            },
+            take: 20,
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
+        let summary = "The is list of All Rent";
+        allRent.forEach((order) => {
+            summary += `\n\n---------------------------------------------------------
+            \n🆔 Order ID: ${order.id}\n📦 Goods Name: ${
+                order.good[0].name
+            }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
+                order.finishRent
+            )}\n📇 Tag ID: ${order?.itemTag?.tagId}\n📔 Approval Status: ${
+                order.rentApprovalStatus
+            }\n🔃 Rent Status: ${order.loanStatus}`;
+        });
+        bot.sendMessage(query.message.chat.id, summary);
+    }
 });
 
 module.exports = bot;
