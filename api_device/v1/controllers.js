@@ -147,7 +147,7 @@ exports.finishRent = async (req, res) => {
             data: {},
         });
     } catch (error) {
-        console.log(error);
+        console.log("ERROR", error);
         return resError({ res, title: "Failed to finish rent", errors: error });
     }
 };
