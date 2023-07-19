@@ -364,7 +364,7 @@ bot.on("callback_query", async (query) => {
         // ONLY USER ALREADY REGISTER CAN ACCESS THIS MENU
         if (userIsExist == false) {
             bot.editMessageText(
-                "Sory we cant show this menu for unregister user 😔. Please fillup your profil first 🙂",
+                "Sorry, we cant show this menu for unregister user 😔. Please fillup your profil first 🙂",
                 opts
             );
             return;
