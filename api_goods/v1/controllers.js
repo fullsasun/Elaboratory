@@ -1,3 +1,4 @@
+//UNTUK CREATE BARANG PEMINJAMAN DI POSTMAN
 const prisma = require("../../prisma/client");
 const bot = require("../../telegram/telegramClient");
 const { resError, resSuccess } = require("../../util/responseHandler");
@@ -125,6 +126,10 @@ exports.detail = async (req, res) => {
         const data = await prisma.goods.findFirstOrThrow({
             where: { id },
             select: {
+                id: true,
+                name: true,
+                createdAt: true,
+
                 tag: {
                     select: {
                         id: true,

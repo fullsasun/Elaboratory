@@ -315,7 +315,7 @@ bot.on("callback_query", async (query) => {
                 // KIRIM PESAN KE USER
                 bot.sendMessage(
                     query.message.chat.id,
-                    `The is a summary of your Rent${summary}`
+                    `This is a summary of your Rent${summary}`
                 );
 
                 // KIRIM PESAN KE ADMINISTRATOR
@@ -400,7 +400,7 @@ bot.on("callback_query", async (query) => {
                 createdAt: "desc",
             },
         });
-        let summary = "The is list of your Rent\n";
+        let summary = "This is list of your Rent\n";
         listOrder.forEach((order) => {
             summary += `\n\n---------------------------------------------------------
             \n🆔 Your Order ID: ${order.id}\n📦 Goods Name: ${
@@ -1018,7 +1018,7 @@ bot.on("callback_query", async (query) => {
             },
         });
 
-        let summary = "The is list of All Rent";
+        let summary = "This is a list of all loans.";
         allRent.forEach((order) => {
             summary += `\n\n---------------------------------------------------------
             \n🆔 Order ID: ${order.id}\n📦 Goods Name: ${
