@@ -223,7 +223,7 @@ bot.on("callback_query", async (query) => {
             orderBy: {
                 name: "asc",
             },
-            take: 10,
+            take: ITEM_LIMIT,
         });
 
         const dataPlaceholder = [];
@@ -233,9 +233,75 @@ bot.on("callback_query", async (query) => {
             ]);
         });
 
+        const allItems = await prisma.goods.count();
+        if (allItems > ITEM_LIMIT) {
+            dataPlaceholder.push([
+                {
+                    text: "Show More",
+                    callback_data: `ORDER_LIST_SHOW_MORE#${data.at(-1).id}`,
+                },
+            ]);
+        }
+
         opts["reply_markup"] = JSON.stringify({
             inline_keyboard: dataPlaceholder,
         });
+        bot.editMessageText("This Is the Item list", opts);
+    }
+
+    // INFO: SHOW MORE ORDER LIST
+    if (userActivity.startsWith("ORDER_LIST_SHOW_MORE")) {
+        const [_, lastId] = userActivity.split("#");
+        const datas = await prisma.goods.findMany({
+            orderBy: {
+                name: "asc",
+            },
+            cursor: {
+                id: lastId,
+            },
+            skip: 1,
+            take: ITEM_LIMIT,
+        });
+
+        const nextData = await prisma.goods.findMany({
+            orderBy: {
+                name: "asc",
+            },
+            cursor: {
+                id: datas.at(-1).id,
+            },
+            skip: 1,
+            take: ITEM_LIMIT,
+        });
+
+        const dataPlaceholder = [];
+        datas.forEach((item) => {
+            dataPlaceholder.push([
+                { text: item.name, callback_data: `order#${item.id}` },
+            ]);
+        });
+        console.log("DATA", datas);
+
+        opts["reply_markup"] = JSON.stringify({
+            inline_keyboard: [...dataPlaceholder],
+        });
+
+        if (nextData.length > 0) {
+            opts["reply_markup"] = JSON.stringify({
+                inline_keyboard: [
+                    ...dataPlaceholder,
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `ORDER_LIST_SHOW_MORE#${
+                                datas.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            });
+        }
+
         bot.editMessageText("This Is the Item list", opts);
     }
 
