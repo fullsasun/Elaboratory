@@ -9,7 +9,7 @@ const bot = require("./telegramClient");
 const Calendar = require("telegram-inline-calendar");
 const moment = require("moment");
 const { days } = require("../util/timeFormater");
-const ITEM_LIMIT = 1;
+const ITEM_LIMIT = 5;
 
 const calendar = new Calendar(bot, {
     date_format: "DD-MM-YYYY",
