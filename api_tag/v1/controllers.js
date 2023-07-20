@@ -1,3 +1,4 @@
+//UNTUK CREATE USER DI POSTMAN
 const prisma = require("../../prisma/client");
 const bot = require("../../telegram/telegramClient");
 const { resError, resSuccess } = require("../../util/responseHandler");

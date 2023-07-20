@@ -315,7 +315,7 @@ bot.on("callback_query", async (query) => {
                 // KIRIM PESAN KE USER
                 bot.sendMessage(
                     query.message.chat.id,
-                    `The is a summary of your Rent${summary}`
+                    `This is a summary of your Rent${summary}`
                 );
 
                 // KIRIM PESAN KE ADMINISTRATOR
@@ -364,7 +364,7 @@ bot.on("callback_query", async (query) => {
         // ONLY USER ALREADY REGISTER CAN ACCESS THIS MENU
         if (userIsExist == false) {
             bot.editMessageText(
-                "Sory we cant show this menu for unregister user 😔. Please fillup your profil first 🙂",
+                "Sorry, we cant show this menu for unregister user 😔. Please fillup your profil first 🙂",
                 opts
             );
             return;
@@ -400,7 +400,7 @@ bot.on("callback_query", async (query) => {
                 createdAt: "desc",
             },
         });
-        let summary = "The is list of your Rent\n";
+        let summary = "This is list of your Rent\n";
         listOrder.forEach((order) => {
             summary += `\n\n---------------------------------------------------------
             \n🆔 Your Order ID: ${order.id}\n📦 Goods Name: ${
