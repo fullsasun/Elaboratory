@@ -77,6 +77,12 @@ bot.onText(/\/start/, async (data) => {
                                     callback_data: "admin-rentlist",
                                 },
                             ],
+                            [
+                                {
+                                    text: "Inventory List",
+                                    callback_data: "inventorylist",
+                                },
+                            ],
                         ],
                     }),
                 };
