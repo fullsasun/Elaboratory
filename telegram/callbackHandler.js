@@ -1266,7 +1266,7 @@ bot.on("callback_query", async (query) => {
 
     // JIKA ADMIN INGIN MELIHAT SELURUH PEMINJAMAN
     if (userActivity == "admin-rentlist") {
-        const allRent = await prisma.rent.findMany({
+        const rentList = await prisma.rent.findMany({
             select: {
                 id: true,
                 startRent: true,
@@ -1277,6 +1277,7 @@ bot.on("callback_query", async (query) => {
                     select: {
                         username: true,
                         user_chat_id: true,
+                        nim: true,
                     },
                 },
                 good: {
@@ -1290,16 +1291,20 @@ bot.on("callback_query", async (query) => {
                     },
                 },
             },
-            take: 10,
+            take: ITEM_LIMIT,
             orderBy: {
                 createdAt: "desc",
             },
         });
 
-        let summary = "The is list of last 10 Rent";
-        allRent.forEach((order) => {
+        const allRent = await prisma.rent.count();
+
+        let summary = `The is list of last ${ITEM_LIMIT} Rent`;
+        rentList.forEach((order) => {
             summary += `\n\n---------------------------------------------------------
-            \n🆔 Order ID: ${order.id}\n📦 Goods Name: ${
+            \n🆔 Order ID: ${order.id}\n🧑 User: ${
+                order?.user[0]?.username
+            }\n🔢 NIM: ${order?.user[0]?.nim}\n📦 Goods Name: ${
                 order.good[0]?.name
             }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
                 order.finishRent
@@ -1307,7 +1312,117 @@ bot.on("callback_query", async (query) => {
                 order.rentApprovalStatus
             }\n🔃 Rent Status: ${order.loanStatus}`;
         });
-        bot.sendMessage(query.message.chat.id, summary);
+
+        const options = {
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `ADMIN_RENT_LIST_SHOW_MORE#${
+                                rentList.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            }),
+        };
+
+        bot.sendMessage(
+            query.message.chat.id,
+            summary,
+            allRent > ITEM_LIMIT ? options : 0
+        );
+    }
+
+    // JIKA ADMIN INGIN MELIHAT LEBIH BANYAK DATA PEMINJAMAN
+    if (userActivity.startsWith("ADMIN_RENT_LIST_SHOW_MORE")) {
+        const [_, lastId] = userActivity.split("#");
+
+        const rentList = await prisma.rent.findMany({
+            select: {
+                id: true,
+                startRent: true,
+                finishRent: true,
+                loanStatus: true,
+                rentApprovalStatus: true,
+                user: {
+                    select: {
+                        username: true,
+                        user_chat_id: true,
+                        nim: true,
+                    },
+                },
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
+            },
+            cursor: {
+                id: lastId,
+            },
+            skip: 1,
+            take: ITEM_LIMIT,
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
+        const nextData = await prisma.rent.findMany({
+            cursor: {
+                id: rentList.at(-1)?.id ? rentList.at(-1)?.id : "",
+            },
+            take: ITEM_LIMIT,
+            skip: 1,
+            orderBy: {
+                createdAt: "desc",
+            },
+            select: {
+                id: true,
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
+
+        let summary = `The is list of next ${rentList.length} Rent List`;
+        rentList.forEach((order) => {
+            summary += `\n\n---------------------------------------------------------
+            \n🆔 Order ID: ${order.id}\n🧑 User: ${
+                order?.user[0]?.username
+            }\n🔢 NIM: ${order?.user[0]?.nim}\n📦 Goods Name: ${
+                order.good[0]?.name
+            }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
+                order.finishRent
+            )}\n📇 Tag ID: ${order?.itemTag?.tagId}\n📔 Approval Status: ${
+                order.rentApprovalStatus
+            }\n🔃 Rent Status: ${order.loanStatus}`;
+        });
+
+        if (nextData.length > 0) {
+            opts["reply_markup"] = JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `ADMIN_RENT_LIST_SHOW_MORE#${
+                                rentList.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            });
+        }
+
+        bot.editMessageText(summary, opts);
     }
 });
 
