@@ -9,6 +9,7 @@ const bot = require("./telegramClient");
 const Calendar = require("telegram-inline-calendar");
 const moment = require("moment");
 const { days } = require("../util/timeFormater");
+const ITEM_LIMIT = 10;
 
 const calendar = new Calendar(bot, {
     date_format: "DD-MM-YYYY",
@@ -76,14 +77,23 @@ bot.on("callback_query", async (query) => {
             );
             return;
         }
+
         const datas = await prisma.goods.findMany({
             orderBy: {
                 name: "asc",
             },
-            take: 10,
+            take: ITEM_LIMIT,
         });
 
-        let summary = "Here is a list of items that you can borrow \n";
+        const allItems = await prisma.goods.count();
+
+        let summary = `Here is a ${
+            datas.length
+        }/${allItems} list of items that you can borrow. ${
+            allItems > ITEM_LIMIT
+                ? "Click Show More to get more item list!"
+                : ""
+        } \n`;
         const dataPlaceholder = [];
 
         for (const key in datas) {
@@ -111,7 +121,91 @@ bot.on("callback_query", async (query) => {
             summary = "We currently do not have a list of items in the system.";
         }
 
-        bot.sendMessage(query.message.chat.id, summary);
+        const options = {
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `INVENTORY_LIST_SHOW_MORE#${
+                                datas.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            }),
+        };
+
+        bot.sendMessage(
+            query.message.chat.id,
+            summary,
+            allItems > ITEM_LIMIT ? options : {}
+        );
+    }
+
+    // INFO: SHOW MORE INVENTORY LIST
+    if (userActivity.startsWith("INVENTORY_LIST_SHOW_MORE")) {
+        const [_, lastId] = userActivity.split("#");
+        const datas = await prisma.goods.findMany({
+            orderBy: {
+                name: "asc",
+            },
+            cursor: {
+                id: lastId,
+            },
+            skip: 1,
+            take: ITEM_LIMIT,
+        });
+
+        const nextData = await prisma.goods.findMany({
+            orderBy: {
+                name: "asc",
+            },
+            cursor: {
+                id: datas.at(-1).id,
+            },
+            skip: 1,
+            take: ITEM_LIMIT,
+        });
+
+        let summary = `Here is a list of item you can order.\n`;
+        for (const key in datas) {
+            if (Object.hasOwnProperty.call(datas, key)) {
+                const data = datas[key];
+
+                const allGoods = await prisma.tagId.count({
+                    where: {
+                        goodsId: data.id,
+                    },
+                });
+
+                // Check good available in db
+                const goodsInStock = await prisma.tagId.count({
+                    where: {
+                        goodsId: data.id,
+                        status: "READY_IN_INVENTORY",
+                    },
+                });
+                summary += `---------------------------------------------------------\n📦 Goods Name: ${data.name}\n📅 Total Stock: ${allGoods}\n⏳ Avaiable: ${goodsInStock}\n\n`;
+            }
+        }
+
+        if (nextData.length > 0) {
+            opts["reply_markup"] = JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `INVENTORY_LIST_SHOW_MORE#${
+                                datas.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            });
+        }
+
+        bot.editMessageText(summary, opts);
     }
 
     // INFO: JIKA USER MENAKAN MENU ORDER ITEM
