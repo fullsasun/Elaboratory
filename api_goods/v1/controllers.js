@@ -1,7 +1,7 @@
 const prisma = require("../../prisma/client");
 const bot = require("../../telegram/telegramClient");
 const { resError, resSuccess } = require("../../util/responseHandler");
-const ITEM_LIMIT = 2;
+const ITEM_LIMIT = 20;
 
 exports.create = async (req, res) => {
     try {

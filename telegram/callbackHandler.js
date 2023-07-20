@@ -1012,13 +1012,13 @@ bot.on("callback_query", async (query) => {
                     },
                 },
             },
-            take: 20,
+            take: 10,
             orderBy: {
                 createdAt: "desc",
             },
         });
 
-        let summary = "The is list of All Rent";
+        let summary = "The is list of last 10 Rent";
         allRent.forEach((order) => {
             summary += `\n\n---------------------------------------------------------
             \n🆔 Order ID: ${order.id}\n📦 Goods Name: ${
