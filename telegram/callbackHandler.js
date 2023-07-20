@@ -9,7 +9,7 @@ const bot = require("./telegramClient");
 const Calendar = require("telegram-inline-calendar");
 const moment = require("moment");
 const { days } = require("../util/timeFormater");
-const ITEM_LIMIT = 10;
+const ITEM_LIMIT = 2;
 
 const calendar = new Calendar(bot, {
     date_format: "DD-MM-YYYY",
@@ -555,12 +555,23 @@ bot.on("callback_query", async (query) => {
                     },
                 },
             },
-            take: 20,
+            take: ITEM_LIMIT,
             orderBy: {
                 createdAt: "desc",
             },
         });
-        let summary = "This is list of your Rent\n";
+
+        const allUserOrder = await prisma.rent.count({
+            where: {
+                user: {
+                    every: {
+                        user_chat_id: String(query.message.chat.id),
+                    },
+                },
+            },
+        });
+
+        let summary = "This is list of your Rent";
         listOrder.forEach((order) => {
             summary += `\n\n---------------------------------------------------------
             \n🆔 Your Order ID: ${order.id}\n📦 Goods Name: ${
@@ -571,11 +582,118 @@ bot.on("callback_query", async (query) => {
                 order.rentApprovalStatus
             }\n🔃 Rent Status: ${order.loanStatus}`;
         });
+
         if (listOrder.length === 0) {
             summary =
                 "You currently do not have a list of order in the system.";
         }
-        bot.sendMessage(query.message.chat.id, summary);
+
+        const options = {
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `MY_ORDER_LIST_SHOW_MORE#${
+                                listOrder.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            }),
+        };
+
+        bot.sendMessage(
+            query.message.chat.id,
+            summary,
+            allUserOrder > ITEM_LIMIT ? options : {}
+        );
+    }
+
+    // INFO: SHOW MORE MY ORDER LIST
+    if (userActivity.startsWith("MY_ORDER_LIST_SHOW_MORE")) {
+        const [_, lastId] = userActivity.split("#");
+        const datas = await prisma.rent.findMany({
+            where: {
+                user: {
+                    every: {
+                        user_chat_id: String(query.message.chat.id),
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+            cursor: {
+                id: lastId,
+            },
+            select: {
+                id: true,
+                startRent: true,
+                finishRent: true,
+                rentApprovalStatus: true,
+                loanStatus: true,
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+            skip: 1,
+            take: ITEM_LIMIT,
+        });
+
+        const nextData = await prisma.rent.findMany({
+            where: {
+                user: {
+                    every: {
+                        user_chat_id: String(query.message.chat.id),
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+            cursor: {
+                id: datas.at(-1).id,
+            },
+            skip: 1,
+            take: ITEM_LIMIT,
+        });
+
+        let summary = `This is list of your Rent`;
+        datas.forEach((order) => {
+            summary += `\n\n---------------------------------------------------------
+            \n🆔 Your Order ID: ${order.id}\n📦 Goods Name: ${
+                order.good[0]?.name
+            }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
+                order.finishRent
+            )}\n📇 Tag ID: ${order?.itemTag?.tagId}\n📔 Approval Status: ${
+                order.rentApprovalStatus
+            }\n🔃 Rent Status: ${order.loanStatus}`;
+        });
+
+        if (nextData.length > 0) {
+            opts["reply_markup"] = JSON.stringify({
+                inline_keyboard: [
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `MY_ORDER_LIST_SHOW_MORE#${
+                                datas.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            });
+        }
+
+        bot.editMessageText(summary, opts);
     }
 
     // INFO: JIKA USER MALKUKAN KONFIRMASI MULAI PEMINJAMAN BARANG\
