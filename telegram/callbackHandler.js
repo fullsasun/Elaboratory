@@ -9,7 +9,7 @@ const bot = require("./telegramClient");
 const Calendar = require("telegram-inline-calendar");
 const moment = require("moment");
 const { days } = require("../util/timeFormater");
-const ITEM_LIMIT = 5;
+const ITEM_LIMIT = 1;
 
 const calendar = new Calendar(bot, {
     date_format: "DD-MM-YYYY",
@@ -975,7 +975,22 @@ bot.on("callback_query", async (query) => {
                 },
                 id: true,
             },
+            take: ITEM_LIMIT,
+            orderBy: {
+                createdAt: "desc",
+            },
         });
+
+        const allData = await prisma.rent.findMany({
+            where: { rentApprovalStatus: "WAITING" },
+            select: {
+                id: true,
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
         data.forEach((item) => {
             dataPlaceholder.push([
                 {
@@ -998,6 +1013,111 @@ bot.on("callback_query", async (query) => {
         opts["reply_markup"] = JSON.stringify({
             inline_keyboard: dataPlaceholder,
         });
+
+        if (allData.length > ITEM_LIMIT) {
+            opts["reply_markup"] = JSON.stringify({
+                inline_keyboard: [
+                    ...dataPlaceholder,
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `ORDER_CONFIRMATION_LIST_SHOW_MORE#${
+                                data.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            });
+        }
+
+        bot.editMessageText(
+            "The following shows a list of items and users who want to borrow these items.\n\nYou can confirm quickly by pressing the tick or cross under the item name.\n\nIf you want to see details of the loan, press the name of the item.",
+            opts
+        );
+    }
+
+    // JIKA ADMIN INGIN MELIHAT LEBIH BANYAK DAFTAR PEMINJAM YANG BELUM DISETUJUI
+    if (userActivity.startsWith("ORDER_CONFIRMATION_LIST_SHOW_MORE")) {
+        const [_, lastId] = userActivity.split("#");
+
+        const dataPlaceholder = [];
+        const data = await prisma.rent.findMany({
+            where: { rentApprovalStatus: "WAITING" },
+            select: {
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                user: {
+                    select: {
+                        username: true,
+                    },
+                },
+                id: true,
+            },
+            take: ITEM_LIMIT,
+            skip: 1,
+            cursor: {
+                id: lastId,
+            },
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
+        const nextData = await prisma.rent.findMany({
+            where: { rentApprovalStatus: "WAITING" },
+            select: {
+                id: true,
+            },
+            cursor: {
+                id: data.at(-1)?.id ? data.at(-1).id : "",
+            },
+            skip: 1,
+            orderBy: {
+                createdAt: "desc",
+            },
+        });
+
+        data.forEach((item) => {
+            dataPlaceholder.push([
+                {
+                    text: `${item.good[0]?.name} by ${item.user[0].username}`,
+                    callback_data: `detail-order#${item.id}`,
+                },
+            ]);
+            dataPlaceholder.push([
+                {
+                    text: `✅`,
+                    callback_data: `confirm-order#${item.id}`,
+                },
+                {
+                    text: `❌`,
+                    callback_data: `reject-order#${item.id}`,
+                },
+            ]);
+        });
+
+        opts["reply_markup"] = JSON.stringify({
+            inline_keyboard: dataPlaceholder,
+        });
+
+        if (nextData.length > 0) {
+            opts["reply_markup"] = JSON.stringify({
+                inline_keyboard: [
+                    ...dataPlaceholder,
+                    [
+                        {
+                            text: "Show More",
+                            callback_data: `MY_ORDER_CONFIRMATION_LIST_SHOW_MORE#${
+                                data.at(-1).id
+                            }`,
+                        },
+                    ],
+                ],
+            });
+        }
 
         bot.editMessageText(
             "The following shows a list of items and users who want to borrow these items.\n\nYou can confirm quickly by pressing the tick or cross under the item name.\n\nIf you want to see details of the loan, press the name of the item.",
@@ -1421,6 +1541,68 @@ bot.on("callback_query", async (query) => {
                 ],
             });
         }
+
+        bot.editMessageText(summary, opts);
+    }
+
+    // JIKA ADMIN INGIN MELIHAT DETAIL PEMINJAMAN
+    if (userActivity.startsWith("detail-order")) {
+        const [_, id] = userActivity.split("#");
+
+        const order = await prisma.rent.findUnique({
+            where: {
+                id,
+            },
+            select: {
+                id: true,
+                startRent: true,
+                finishRent: true,
+                loanStatus: true,
+                rentApprovalStatus: true,
+                user: {
+                    select: {
+                        username: true,
+                        user_chat_id: true,
+                        nim: true,
+                    },
+                },
+                good: {
+                    select: {
+                        name: true,
+                    },
+                },
+                itemTag: {
+                    select: {
+                        tagId: true,
+                    },
+                },
+            },
+        });
+
+        let summary = `Order Detail: \n🆔 Order ID: ${order.id}\n🧑 User: ${
+            order?.user[0]?.username
+        }\n🔢 NIM: ${order?.user[0]?.nim}\n📦 Goods Name: ${
+            order.good[0]?.name
+        }\n📅 Start Rent: ${days(order.startRent)}\n⏳ Finish Rent: ${days(
+            order.finishRent
+        )}\n📇 Tag ID: ${order?.itemTag?.tagId}\n📔 Approval Status: ${
+            order.rentApprovalStatus
+        }\n🔃 Rent Status: ${order.loanStatus}`;
+
+        opts["reply_markup"] = JSON.stringify({
+            inline_keyboard: [
+                [
+                    {
+                        text: `✅`,
+                        callback_data: `confirm-order#${id}`,
+                    },
+                    {
+                        text: `❌`,
+                        callback_data: `reject-order#${id}`,
+                    },
+                ],
+            ],
+        });
 
         bot.editMessageText(summary, opts);
     }
