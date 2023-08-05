@@ -411,8 +411,69 @@ bot.on("callback_query", async (query) => {
             },
         });
         if (goodsInStock == 0) {
+            const nearestTimeGoodsWillAvailable = await prisma.tagId.findMany({
+                where: {
+                    OR: [
+                        {
+                            goodsId: id,
+                            status: "TAKEN_BY_USER",
+                        },
+                        {
+                            goodsId: id,
+                            status: "BOOKED_BY_USER",
+                        },
+                    ],
+                },
+                select: {
+                    id: true,
+                    tagId: true,
+                    status: true,
+                    Goods: {
+                        select: {
+                            name: true,
+                        },
+                    },
+                    Rent: {
+                        where: {
+                            OR: [
+                                { loanStatus: "LATE" },
+                                { loanStatus: "LATE_FINISH" },
+                                { loanStatus: "NOT_STARTED" },
+                                { loanStatus: "USED" },
+                                {
+                                    loanStatus: "START_CONFIRMATION",
+                                },
+                            ],
+                        },
+                        orderBy: {
+                            finishRent: "desc",
+                        },
+                        select: {
+                            finishRent: true,
+                        },
+                    },
+                },
+            });
+
+            const dateStrings = nearestTimeGoodsWillAvailable.map((data) => {
+                console.log(data.Rent);
+                return data.Rent[0].finishRent;
+            });
+
+            const compareDates = (a, b) => {
+                const dateA = new Date(a);
+                const dateB = new Date(b);
+                return dateA - dateB;
+            };
+
+            dateStrings.sort(compareDates);
+
             bot.editMessageText(
-                `📦 You Are Select ${data.name} not availble for now. All itens are on rent. Please try again in few day.`,
+                `📦 You Are Select ${
+                    data.name
+                } not availble for now. All items are on rent. Please try again on ${days(
+                    dateStrings[0]
+                )}.`,
                 {
                     chat_id: userChatId,
                     message_id: userMessageId,
