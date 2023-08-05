@@ -113,7 +113,82 @@ bot.on("callback_query", async (query) => {
                         status: "READY_IN_INVENTORY",
                     },
                 });
-                summary += `---------------------------------------------------------\n📦 Goods Name: ${data.name}\n📅 Total Stock: ${allGoods}\n⏳ Avaiable: ${goodsInStock}\n\n`;
+
+                if (Number(allGoods) >= 0 && Number(goodsInStock) >= 0) {
+                    summary += `---------------------------------------------------------\n📦 Goods Name: ${data.name}\n📅 Total Stock: ${allGoods}\n⏳ Avaiable: ${goodsInStock}\n\n`;
+                }
+
+                if (Number(allGoods) > 0 && Number(goodsInStock) == 0) {
+                    const nearestTimeGoodsWillAvailable =
+                        await prisma.tagId.findMany({
+                            where: {
+                                OR: [
+                                    {
+                                        goodsId: data.id,
+                                        status: "TAKEN_BY_USER",
+                                    },
+                                    {
+                                        goodsId: data.id,
+                                        status: "BOOKED_BY_USER",
+                                    },
+                                ],
+                            },
+                            select: {
+                                id: true,
+                                tagId: true,
+                                status: true,
+                                Goods: {
+                                    select: {
+                                        name: true,
+                                    },
+                                },
+                                Rent: {
+                                    where: {
+                                        OR: [
+                                            { loanStatus: "LATE" },
+                                            { loanStatus: "LATE_FINISH" },
+                                            { loanStatus: "NOT_STARTED" },
+                                            { loanStatus: "USED" },
+                                            {
+                                                loanStatus:
+                                                    "START_CONFIRMATION",
+                                            },
+                                        ],
+                                    },
+                                    orderBy: {
+                                        finishRent: "desc",
+                                    },
+                                    select: {
+                                        finishRent: true,
+                                    },
+                                },
+                            },
+                        });
+
+                    const dateStrings = nearestTimeGoodsWillAvailable.map(
+                        (data) => {
+                            console.log(data.Rent);
+                            return data.Rent[0].finishRent;
+                        }
+                    );
+
+                    console.log(dateStrings);
+
+                    const compareDates = (a, b) => {
+                        const dateA = new Date(a);
+                        const dateB = new Date(b);
+                        return dateA - dateB;
+                    };
+
+                    dateStrings.sort(compareDates);
+                    console.log(dateStrings);
+
+                    summary += `---------------------------------------------------------\n📦 Goods Name: ${
+                        data.name
+                    }\n📅 Total Stock: ${allGoods}\n⏳ Avaiable: ${goodsInStock}\n🕑 Will Available again on: ${days(
+                        dateStrings[0]
+                    )}\n\n`;
+                }
             }
         }
 
