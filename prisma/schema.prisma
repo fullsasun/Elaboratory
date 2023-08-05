@@ -76,6 +76,13 @@ model Rent {
   tagIdId            String?
 }
 
+model Api_Key {
+  id        String   @id @default(cuid())
+  secret    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum APPROVAL_STATUS {
   ALLOWED
   REJECTED
